@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Update Product{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+  <div class="flex items-center gap-2 text-sm text-slate-500 mb-3">
+    <a href="{{ url_for('view_inventory') }}" class="hover:text-primary transition-colors">Inventory</a>
+    <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+    <span class="text-slate-800 font-medium">Edit Product</span>
+  </div>
+  <h2 class="font-display-sm text-on-background" style="font-size:24px;font-weight:700;">Update Product</h2>
+  <p class="text-secondary mt-1" style="font-size:14px;">Modify the details for <strong>{{ product_name }}</strong>.</p>
+</div>
+
+<!-- Edit Form -->
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+  <form method="POST" action="{{ url_for('update_product', product_name=product_name) }}">
+    <div class="p-8">
+      <div class="grid grid-cols-12 gap-6">
+
+        <!-- Main Info (left 8/12) -->
+        <div class="col-span-12 md:col-span-8 flex flex-col gap-6">
+
+          <!-- Product Name (read-only) -->
+          <div>
+            <label class="block text-[12px] font-bold text-slate-700 mb-2">Product Name</label>
+            <div class="w-full h-[38px] px-3 border border-slate-200 rounded bg-slate-50 flex items-center text-sm text-slate-500 font-medium">
+              {{ product_name }}
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Product name cannot be changed. Delete and re-add to rename.</p>
+          </div>
+
+          <!-- SKU + Category -->
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="block text-[12px] font-bold text-slate-700 mb-2">SKU Number</label>
+              <input name="sku" type="text" value="{{ product.sku }}"
+                     class="w-full h-[38px] px-3 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-primary outline-none transition-all text-sm"/>
+            </div>
+            <div>
+              <label class="block text-[12px] font-bold text-slate-700 mb-2">Category</label>
+              <select name="category"
+                      class="w-full h-[38px] px-3 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-primary outline-none transition-all text-sm bg-white">
+                {% for cat in ['Electronics','Raw Materials','Finished Goods','Furniture','Office Supplies','Maintenance & Repair','Packaging','Apparel'] %}
+                <option {% if cat == product.category %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-[12px] font-bold text-slate-700 mb-2">Product Description</label>
+            <textarea name="description" rows="4"
+                      class="w-full p-3 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-primary outline-none transition-all text-sm placeholder:text-slate-400"
+                      placeholder="Detailed specifications, storage requirements, or vendor notes...">{{ product.description }}</textarea>
+          </div>
+        </div>
+
+        <!-- Side Specs (right 4/12) -->
+        <div class="col-span-12 md:col-span-4 bg-slate-50 p-6 rounded-lg border border-slate-200 flex flex-col gap-6">
+          <div>
+            <label class="block text-[12px] font-bold text-slate-700 mb-2">Quantity</label>
+            <div class="relative">
+              <input name="quantity" type="number" value="{{ product.quantity }}" min="0"
+                     class="w-full h-[38px] px-3 pr-14 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-primary outline-none transition-all text-sm"/>
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[12px] font-bold">units</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[12px] font-bold text-slate-700 mb-2">Price per Unit (USD)</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <input name="price" type="number" step="0.01" min="0" value="{{ product.price }}"
+                     class="w-full h-[38px] pl-7 pr-3 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-primary outline-none transition-all text-sm"/>
+            </div>
+          </div>
+
+          <!-- Current Status Badge -->
+          {% set status = get_stock_status(product.quantity) %}
+          <div class="pt-4 border-t border-slate-200">
+            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Current Status</p>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border
+              {% if status == 'In Stock' %}bg-emerald-50 text-emerald-700 border-emerald-200
+              {% elif status == 'Low Stock' %}bg-red-50 text-red-700 border-red-200
+              {% else %}bg-slate-100 text-slate-600 border-slate-300{% endif %}">
+              <span class="w-1.5 h-1.5 rounded-full
+                {% if status == 'In Stock' %}bg-emerald-500
+                {% elif status == 'Low Stock' %}bg-red-500
+                {% else %}bg-slate-400{% endif %}"></span>
+              {{ status }}
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Form Actions -->
+      <div class="mt-10 pt-6 border-t border-slate-100 flex items-center justify-between">
+        <!-- Delete on the left -->
+        <button type="button"
+                onclick="openDeleteModal('{{ product_name|replace("'", "\\'") }}', '{{ url_for('delete_product', product_name=product_name) }}')"
+                class="px-4 h-[38px] text-red-600 border border-red-200 font-semibold rounded hover:bg-red-50 transition-colors text-sm flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px]">delete</span> Delete Product
+        </button>
+
+        <div class="flex gap-3">
+          <a href="{{ url_for('view_inventory') }}"
+             class="px-6 h-[38px] flex items-center bg-white border border-slate-200 text-secondary font-semibold rounded hover:bg-slate-50 transition-colors text-sm">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="px-8 h-[38px] bg-primary text-white font-semibold rounded shadow-sm hover:bg-blue-700 transition-colors active:scale-95 flex items-center gap-2 text-sm">
+            <span class="material-symbols-outlined text-[18px]">save</span> Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
