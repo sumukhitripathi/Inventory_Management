@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>{% block title %}InventoryOS{% endblock %} — Logistics Pro</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-background": "#191c1e", "primary": "#004ac6", "secondary": "#505f76",
+            "surface": "#f7f9fb", "surface-container-lowest": "#ffffff",
+            "surface-container": "#eceef0", "surface-container-high": "#e6e8ea",
+            "surface-container-highest": "#e0e3e5", "surface-container-low": "#f2f4f6",
+            "on-surface": "#191c1e", "on-surface-variant": "#434655",
+            "error": "#ba1a1a", "error-container": "#ffdad6",
+            "primary-container": "#2563eb", "secondary-container": "#d0e1fb",
+            "outline": "#737686", "outline-variant": "#c3c6d7",
+            "inverse-primary": "#b4c5ff", "background": "#f7f9fb",
+          },
+          borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+          fontFamily: {
+            "body-md": ["Inter"], "title-sm": ["Manrope"], "tabular-nums": ["Inter"],
+            "headline-md": ["Manrope"], "display-sm": ["Manrope"], "label-bold": ["Inter"], "body-sm": ["Inter"]
+          },
+          fontSize: {
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "title-sm": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+            "tabular-nums": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            "headline-md": ["20px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "display-sm": ["24px", { lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "label-bold": ["12px", { lineHeight: "16px", fontWeight: "600" }],
+            "body-sm": ["13px", { lineHeight: "18px", fontWeight: "400" }]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen">
+
+  <!-- ── Side Navigation ── -->
+  <aside class="w-[260px] h-screen fixed left-0 top-0 border-r z-40 bg-white border-slate-200 shadow-sm flex flex-col font-manrope text-[13px] tracking-tight">
+    <div class="p-6 flex flex-col gap-1">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-black text-slate-900 tracking-tighter">InventoryOS</h1>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Logistics Pro</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 space-y-1">
+      {# Dashboard #}
+      <a href="{{ url_for('dashboard') }}"
+         class="flex items-center gap-3 px-4 py-2 transition-all duration-150 active:scale-[0.98]
+         {% if request.endpoint == 'dashboard' %}text-blue-600 font-semibold bg-blue-50/50 border-r-4 border-blue-600
+         {% else %}text-slate-500 hover:text-slate-900 hover:bg-slate-50{% endif %}">
+        <span class="material-symbols-outlined">dashboard</span> Dashboard
+      </a>
+
+      {# Add Product #}
+      <a href="{{ url_for('add_product') }}"
+         class="flex items-center gap-3 px-4 py-2 transition-all duration-150 active:scale-[0.98]
+         {% if request.endpoint == 'add_product' %}text-blue-600 font-semibold bg-blue-50/50 border-r-4 border-blue-600
+         {% else %}text-slate-500 hover:text-slate-900 hover:bg-slate-50{% endif %}">
+        <span class="material-symbols-outlined">add_box</span> Add Product
+      </a>
+
+      {# View Inventory #}
+      <a href="{{ url_for('view_inventory') }}"
+         class="flex items-center gap-3 px-4 py-2 transition-all duration-150 active:scale-[0.98]
+         {% if request.endpoint in ['view_inventory', 'update_product'] %}text-blue-600 font-semibold bg-blue-50/50 border-r-4 border-blue-600
+         {% else %}text-slate-500 hover:text-slate-900 hover:bg-slate-50{% endif %}">
+        <span class="material-symbols-outlined" style="{% if request.endpoint in ['view_inventory','update_product'] %}font-variation-settings: 'FILL' 1;{% endif %}">inventory_2</span> View Inventory
+      </a>
+
+      {# Search Product #}
+      <a href="{{ url_for('search_product') }}"
+         class="flex items-center gap-3 px-4 py-2 transition-all duration-150 active:scale-[0.98]
+         {% if request.endpoint == 'search_product' %}text-blue-600 font-semibold bg-blue-50/50 border-r-4 border-blue-600
+         {% else %}text-slate-500 hover:text-slate-900 hover:bg-slate-50{% endif %}">
+        <span class="material-symbols-outlined">search</span> Search Product
+      </a>
+    </nav>
+
+    <!-- User Profile Footer -->
+    <div class="p-4 border-t border-slate-100">
+      <div class="flex items-center gap-3 px-2">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">A</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-slate-900 truncate">Admin User</p>
+          <p class="text-xs text-slate-500 truncate">System Administrator</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Top App Bar ── -->
+  <header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 border-b z-30 bg-slate-50/80 backdrop-blur-md border-slate-200 flex items-center justify-between px-6 gap-4 font-manrope text-sm antialiased">
+    <div class="flex-1 max-w-xl">
+      <form method="GET" action="{{ url_for('search_product') }}">
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">search</span>
+          <input name="q" class="w-full h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" placeholder="Search system inventory..." type="text"/>
+        </div>
+      </form>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('save_inventory') }}" title="Export CSV"
+         class="hover:bg-slate-200/50 rounded-md p-1.5 transition-colors cursor-pointer text-slate-500 flex items-center">
+        <span class="material-symbols-outlined">file_download</span>
+      </a>
+      <button class="hover:bg-slate-200/50 rounded-md p-1.5 transition-colors cursor-pointer text-slate-500">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
+      <button class="hover:bg-slate-200/50 rounded-md p-1.5 transition-colors cursor-pointer text-slate-500">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main Content ── -->
+  <main class="pl-[260px] pt-16 min-h-screen">
+    <div class="p-8 max-w-6xl mx-auto">
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="mb-6 flex items-center gap-3 p-4 rounded-xl shadow-sm border
+              {% if category == 'success' %}bg-emerald-50 border-emerald-100
+              {% elif category == 'error' %}bg-red-50 border-red-100
+              {% elif category == 'warning' %}bg-amber-50 border-amber-100
+              {% else %}bg-blue-50 border-blue-100{% endif %}"
+              id="flash-msg">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                {% if category == 'success' %}bg-emerald-500
+                {% elif category == 'error' %}bg-red-500
+                {% elif category == 'warning' %}bg-amber-500
+                {% else %}bg-blue-500{% endif %}">
+                <span class="material-symbols-outlined text-white text-[18px]" style="font-variation-settings: 'FILL' 1;">
+                  {% if category == 'success' %}check_circle
+                  {% elif category == 'error' %}error
+                  {% elif category == 'warning' %}warning
+                  {% else %}info{% endif %}
+                </span>
+              </div>
+              <p class="flex-1 text-sm font-medium
+                {% if category == 'success' %}text-emerald-800
+                {% elif category == 'error' %}text-red-800
+                {% elif category == 'warning' %}text-amber-800
+                {% else %}text-blue-800{% endif %}">{{ message }}</p>
+              <button onclick="document.getElementById('flash-msg').remove()" class="text-slate-400 hover:text-slate-600 p-1">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Need Help FAB -->
+  <div class="fixed bottom-8 right-8 z-50">
+    <div class="bg-white p-3 rounded-full shadow-lg border border-slate-100 flex items-center gap-2 pr-5">
+      <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+        <span class="material-symbols-outlined text-[18px]">support_agent</span>
+      </div>
+      <span class="font-title-sm text-slate-700 text-sm font-semibold">Need help?</span>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal (shared) -->
+  <div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8 max-w-sm w-full mx-4">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+          <span class="material-symbols-outlined text-red-600" style="font-variation-settings: 'FILL' 1;">delete_forever</span>
+        </div>
+        <div>
+          <h3 class="font-headline-md text-slate-900">Delete Product</h3>
+          <p class="text-body-sm text-slate-500">This action cannot be undone.</p>
+        </div>
+      </div>
+      <p class="text-body-md text-slate-600 mb-6">Are you sure you want to delete <strong id="delete-product-name" class="text-slate-900"></strong>?</p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()" class="flex-1 h-10 bg-white border border-slate-200 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+        <form id="delete-form" method="POST">
+          <button type="submit" class="h-10 px-6 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

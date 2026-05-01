@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8 flex justify-between items-end">
+  <div>
+    <h2 class="font-display-sm text-on-background" style="font-size:24px;font-weight:700;">Inventory Dashboard</h2>
+    <p class="text-secondary mt-1" style="font-size:14px;">Real-time overview of your logistics operations.</p>
+  </div>
+  <div class="flex gap-3">
+    <a href="{{ url_for('save_inventory') }}"
+       class="h-10 px-4 bg-white border border-slate-200 rounded-lg text-slate-600 font-semibold text-sm flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+      <span class="material-symbols-outlined text-[18px]">file_download</span> Export CSV
+    </a>
+    <a href="{{ url_for('add_product') }}"
+       class="h-10 px-6 bg-primary text-white rounded-lg font-semibold text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-primary/20">
+      <span class="material-symbols-outlined text-[18px]">add</span> New Product
+    </a>
+  </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-600">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Items</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">{{ "{:,}".format(stats.total_items) }}</p>
+    <div class="mt-2 flex items-center gap-1 text-emerald-600 text-xs font-semibold">
+      <span class="material-symbols-outlined text-[14px]">inventory_2</span>
+      <span>{{ stats.product_count }} product types</span>
+    </div>
+  </div>
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Low Stock Alerts</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">{{ stats.low_stock }}</p>
+    <div class="mt-2 flex items-center gap-1 {% if stats.low_stock > 0 %}text-red-500{% else %}text-emerald-600{% endif %} text-xs font-semibold">
+      <span class="material-symbols-outlined text-[14px]">{% if stats.low_stock > 0 %}warning{% else %}check_circle{% endif %}</span>
+      <span>{% if stats.low_stock > 0 %}Action required{% else %}All levels healthy{% endif %}</span>
+    </div>
+  </div>
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-slate-400">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categories</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">{{ stats.categories }}</p>
+    <div class="mt-2 flex items-center gap-1 text-slate-400 text-xs">
+      <span>Across all warehouses</span>
+    </div>
+  </div>
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-primary">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Stock Value</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">${{ "{:,.0f}".format(stats.total_value) }}</p>
+    <div class="mt-2 flex items-center gap-1 text-blue-600 text-xs font-semibold">
+      <span class="material-symbols-outlined text-[14px]">payments</span>
+      <span>Total inventory value</span>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Products Table -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+  <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+    <h3 class="font-semibold text-slate-900" style="font-size:16px;">Recent Products</h3>
+    <a href="{{ url_for('view_inventory') }}" class="text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+      View all <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+    </a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Product Name</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">SKU</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Category</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Stock</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for name, product in recent %}
+        {% set status = get_stock_status(product.quantity) %}
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="px-6 py-4 font-medium text-slate-900">{{ name }}</td>
+          <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ product.sku }}</td>
+          <td class="px-6 py-4">
+            <span class="px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider
+              {% if product.category == 'Electronics' %}bg-blue-50 text-blue-700
+              {% elif product.category == 'Furniture' %}bg-purple-50 text-purple-700
+              {% elif product.category == 'Office Supplies' %}bg-amber-50 text-amber-700
+              {% else %}bg-slate-100 text-slate-600{% endif %}">
+              {{ product.category }}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <span class="font-bold {% if status == 'Low Stock' or status == 'Out of Stock' %}text-red-600{% else %}text-slate-700{% endif %}">
+                {{ product.quantity }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter border
+                {% if status == 'In Stock' %}bg-emerald-50 text-emerald-600 border-emerald-100
+                {% elif status == 'Low Stock' %}bg-red-50 text-red-600 border-red-100
+                {% else %}bg-slate-100 text-slate-500 border-slate-200{% endif %}">
+                {{ status }}
+              </span>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-right font-semibold text-slate-900">${{ "%.2f"|format(product.price) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+            <span class="material-symbols-outlined text-[48px] block mb-2">inventory_2</span>
+            No products yet. <a href="{{ url_for('add_product') }}" class="text-primary font-semibold">Add your first product →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Info Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="p-4 bg-blue-50 border-l-4 border-primary rounded-r shadow-sm">
+    <h5 class="text-[12px] font-bold text-primary flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px]">info</span> SKU Best Practices
+    </h5>
+    <p class="text-[12px] text-slate-600 mt-1">Use a structured format (e.g., DEPT-CAT-COLOR) for consistent inventory tracking and search optimization.</p>
+  </div>
+  <div class="p-4 bg-slate-100 border border-slate-200 rounded shadow-sm">
+    <h5 class="text-[12px] font-bold text-slate-600 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px]">history</span> Recent Activity
+    </h5>
+    <p class="text-[12px] text-slate-500 mt-1">
+      {% if recent %}
+        Last product: <strong>{{ recent[0][0] }}</strong> — {{ recent[0][1].quantity }} units @ ${{ "%.2f"|format(recent[0][1].price) }}
+      {% else %}
+        No recent activity yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="p-4 bg-slate-100 border border-slate-200 rounded shadow-sm">
+    <h5 class="text-[12px] font-bold text-slate-600 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px]">verified</span> Data Integrity
+    </h5>
+    <p class="text-[12px] text-slate-500 mt-1">Ensure all mandatory fields are completed to maintain high-quality logistics reporting metrics.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}View Inventory{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8 flex justify-between items-end">
+  <div>
+    <h2 class="font-display-sm text-on-background" style="font-size:24px;font-weight:700;">Inventory Management</h2>
+    <p class="text-secondary mt-1" style="font-size:14px;">Real-time oversight of all logistical assets and stock levels.</p>
+  </div>
+  <div class="flex gap-3">
+    <a href="{{ url_for('save_inventory') }}"
+       class="h-10 px-4 bg-white border border-slate-200 rounded-lg text-slate-600 font-semibold text-sm flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+      <span class="material-symbols-outlined text-[18px]">file_download</span> Export CSV
+    </a>
+    <a href="{{ url_for('add_product') }}"
+       class="h-10 px-6 bg-primary text-white rounded-lg font-semibold text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-primary/20">
+      <span class="material-symbols-outlined text-[18px]">add</span> New Product
+    </a>
+  </div>
+</div>
+
+<!-- Stats Strip -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-600">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Items</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">{{ "{:,}".format(stats.total_items) }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Low Stock Alerts</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">{{ stats.low_stock }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-slate-400">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categories</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">{{ stats.categories }}</p>
+  </div>
+  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-primary">
+    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Stock Value</p>
+    <p class="text-[24px] font-bold text-slate-900 leading-none">${{ "{:,.0f}".format(stats.total_value) }}</p>
+  </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white rounded-t-xl border-x border-t border-slate-200 p-4 flex flex-wrap items-center justify-between gap-4">
+  <form method="GET" action="{{ url_for('view_inventory') }}" class="flex items-center gap-4 flex-1 flex-wrap">
+    <div class="relative w-full max-w-xs">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">filter_list</span>
+      <input name="q" value="{{ search_query }}" type="text"
+             class="w-full h-9 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none"
+             placeholder="Filter by product or SKU..."/>
+    </div>
+    <select name="category"
+            class="h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-primary/10">
+      <option value="">All Categories</option>
+      {% for cat in all_categories %}
+      <option {% if cat == category_filter %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+    <select name="status"
+            class="h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-primary/10">
+      <option value="">All Status</option>
+      <option {% if status_filter == 'In Stock' %}selected{% endif %}>In Stock</option>
+      <option {% if status_filter == 'Low Stock' %}selected{% endif %}>Low Stock</option>
+      <option {% if status_filter == 'Out of Stock' %}selected{% endif %}>Out of Stock</option>
+    </select>
+    <button type="submit" class="h-9 px-4 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">Apply</button>
+    {% if search_query or category_filter or status_filter %}
+    <a href="{{ url_for('view_inventory') }}" class="h-9 px-4 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors flex items-center">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Product Table -->
+<div class="bg-white rounded-b-xl border border-slate-200 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Product Name</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">SKU</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Category</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Stock Level</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Unit Price</th>
+          <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for name, product in products %}
+        {% set status = get_stock_status(product.quantity) %}
+        <tr class="hover:bg-slate-50 transition-colors group">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-400">
+                <span class="material-symbols-outlined text-[20px]">
+                  {% if product.category == 'Electronics' %}devices
+                  {% elif product.category == 'Furniture' %}chair_alt
+                  {% elif product.category == 'Office Supplies' %}print
+                  {% elif product.category == 'Raw Materials' %}construction
+                  {% elif product.category == 'Apparel' %}checkroom
+                  {% else %}inventory_2{% endif %}
+                </span>
+              </div>
+              <span class="font-medium text-slate-900">{{ name }}</span>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ product.sku }}</td>
+          <td class="px-6 py-4">
+            <span class="px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider
+              {% if product.category == 'Electronics' %}bg-blue-50 text-blue-700
+              {% elif product.category == 'Furniture' %}bg-purple-50 text-purple-700
+              {% elif product.category == 'Office Supplies' %}bg-amber-50 text-amber-700
+              {% elif product.category == 'Raw Materials' %}bg-orange-50 text-orange-700
+              {% elif product.category == 'Apparel' %}bg-pink-50 text-pink-700
+              {% else %}bg-slate-100 text-slate-600{% endif %}">
+              {{ product.category }}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <span class="font-bold {% if status == 'Low Stock' or status == 'Out of Stock' %}text-red-600{% else %}text-slate-700{% endif %}">
+                {{ product.quantity }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter border
+                {% if status == 'In Stock' %}bg-emerald-50 text-emerald-600 border-emerald-100
+                {% elif status == 'Low Stock' %}bg-red-50 text-red-600 border-red-100
+                {% else %}bg-slate-100 text-slate-500 border-slate-200{% endif %}">
+                {{ status }}
+              </span>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-right font-semibold text-slate-900">${{ "%.2f"|format(product.price) }}</td>
+          <td class="px-6 py-4 text-right">
+            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <a href="{{ url_for('update_product', product_name=name) }}"
+                 class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Edit">
+                <span class="material-symbols-outlined text-[18px]">edit</span>
+              </a>
+              <!-- Delete triggers modal -->
+              <button onclick="openDeleteModal('{{ name|replace("'", "\\'") }}', '{{ url_for('delete_product', product_name=name) }}')"
+                      class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all" title="Delete">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="px-6 py-16 text-center">
+            <span class="material-symbols-outlined text-[56px] text-slate-300 block mb-3">inventory_2</span>
+            <p class="text-slate-500 font-medium mb-2">
+              {% if search_query or category_filter or status_filter %}
+                No products match your current filters.
+              {% else %}
+                No products in inventory yet.
+              {% endif %}
+            </p>
+            <a href="{{ url_for('add_product') }}" class="text-primary font-semibold hover:underline">Add your first product →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Footer -->
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+    <p class="text-sm text-slate-500">
+      Showing <span class="font-bold text-slate-900">{{ products|length }}</span> product{% if products|length != 1 %}s{% endif %}
+    </p>
+    <p class="text-xs text-slate-400 uppercase tracking-widest font-bold">InventoryOS • Real-time Sync Active</p>
+  </div>
+</div>
+
+<!-- Floating Add Button -->
+<a href="{{ url_for('add_product') }}"
+   class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40">
+  <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</a>
+{% endblock %}
